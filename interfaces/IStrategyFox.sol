@@ -2,6 +2,6 @@
 
 pragma solidity 0.6.12;
 
-interface IStrategyFish {
+interface IStrategyFox {
     function depositReward(uint256 _depositAmt) external returns (bool);
 }

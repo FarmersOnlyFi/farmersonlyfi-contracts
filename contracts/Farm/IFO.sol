@@ -25,7 +25,7 @@ contract IFO is ReentrancyGuard, Governor {
   // The token used to buy offeringToken e.g. USDC
   IERC20 public purchaseToken;
   uint256 public purchaseDecimal;
-  // The token used to burn during buy e.g. FISH
+  // The token used to burn during buy e.g. FOX
   IERC20 public burnToken;
   uint256 public burnDecimal;
   // purchaseToken:burnToken
