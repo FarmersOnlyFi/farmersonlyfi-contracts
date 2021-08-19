@@ -2,7 +2,7 @@
 
 pragma solidity ^0.6.0;
 
-import "./SafeMath.sol";
+import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/math/SafeMath.sol";
 
 contract MockLPToken {
 

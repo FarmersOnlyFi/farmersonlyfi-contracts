@@ -2,30 +2,29 @@
 
 pragma solidity 0.6.12;
 
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/access/Ownable.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/token/ERC20/SafeERC20.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/utils/Pausable.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/utils/ReentrancyGuard.sol";
+import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/access/Ownable.sol";
+import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/token/ERC20/SafeERC20.sol";
+import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/utils/Pausable.sol";
+import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/utils/ReentrancyGuard.sol";
 
-import "./libs/IStrategyFish.sol";
-import "./libs/IUniPair.sol";
-import "./libs/IUniRouter02.sol";
+import "../interfaces/IStrategyBurnVault.sol";
+import "../interfaces/IUniPair.sol";
+import "../interfaces/IUniRouter02.sol";
 
 abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
+    address public woneAddress;
     address public wantAddress;
     address public token0Address;
     address public token1Address;
     address public earnedAddress;
     
     address public uniRouterAddress;
-    address public constant usdcAddress = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
-    address public constant fishAddress = 0x3a3Df212b7AA91Aa0402B9035b098891d276572B;
-    address public constant rewardAddress = 0x917FB15E8aAA12264DCBdC15AFef7cD3cE76BA39;
-    address public constant withdrawFeeAddress = 0x4879712c5D1A98C0B88Fb700daFF5c65d12Fd729;
-    address public constant feeAddress = 0x1cb757f1eB92F25A917CE9a92ED88c1aC0734334;
+    address public withdrawFeeAddress;
+    address public controllerFeeAddress;
+    address public rewardAddress;
     address public vaultChefAddress;
     address public govAddress;
 
@@ -34,8 +33,8 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
 
     address public constant buyBackAddress = 0x000000000000000000000000000000000000dEaD;
     uint256 public controllerFee = 50;
-    uint256 public rewardRate = 0;
-    uint256 public buyBackRate = 450;
+    uint256 public operatorFee = 100;
+    uint256 public rewardRate = 300;
     uint256 public constant feeMaxTotal = 1000;
     uint256 public constant feeMax = 10000; // 100 = 1%
 
@@ -46,9 +45,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     uint256 public slippageFactor = 950; // 5% default slippage tolerance
     uint256 public constant slippageFactorUL = 995;
 
-    address[] public earnedToWmaticPath;
-    address[] public earnedToUsdcPath;
-    address[] public earnedToFishPath;
+    address[] public earnedToWonePath;
     address[] public earnedToToken0Path;
     address[] public earnedToToken1Path;
     address[] public token0ToEarnedPath;
@@ -56,8 +53,8 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     
     event SetSettings(
         uint256 _controllerFee,
+        uint256 _operatorFee,
         uint256 _rewardRate,
-        uint256 _buyBackRate,
         uint256 _withdrawFeeFactor,
         uint256 _slippageFactor,
         address _uniRouterAddress
@@ -152,10 +149,26 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         if (controllerFee > 0) {
             uint256 fee = _earnedAmt.mul(controllerFee).div(feeMax);
     
-            _safeSwapWmatic(
+            _safeSwapWone(
                 fee,
-                earnedToWmaticPath,
-                feeAddress
+                earnedToWonePath,
+                controllerFeeAddress
+            );
+            
+            _earnedAmt = _earnedAmt.sub(fee);
+        }
+
+        return _earnedAmt;
+    }
+
+    function distributeOperatorFees(uint256 _earnedAmt) internal returns (uint256) {
+        if (operatorFee > 0) {
+            uint256 fee = _earnedAmt.mul(operatorFee).div(feeMax);
+
+            _safeSwap(
+                fee,
+                earnedToWonePath,
+                withdrawFeeAddress
             );
             
             _earnedAmt = _earnedAmt.sub(fee);
@@ -167,38 +180,19 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     function distributeRewards(uint256 _earnedAmt) internal returns (uint256) {
         if (rewardRate > 0) {
             uint256 fee = _earnedAmt.mul(rewardRate).div(feeMax);
-    
-            uint256 usdcBefore = IERC20(usdcAddress).balanceOf(address(this));
-            
+            uint256 woneBefore = IERC20(woneAddress).balanceOf(address(this));
+
             _safeSwap(
                 fee,
-                earnedToUsdcPath,
+                earnedToWonePath,
                 address(this)
             );
-            
-            uint256 usdcAfter = IERC20(usdcAddress).balanceOf(address(this)).sub(usdcBefore);
-            
-            IStrategyFish(rewardAddress).depositReward(usdcAfter);
-            
+
+            uint256 woneAfter = IERC20(woneAddress).balanceOf(address(this)).sub(woneBefore);
+            IStrategyBurnVault(rewardAddress).depositReward(woneAfter);
             _earnedAmt = _earnedAmt.sub(fee);
         }
 
-        return _earnedAmt;
-    }
-
-    function buyBack(uint256 _earnedAmt) internal virtual returns (uint256) {
-        if (buyBackRate > 0) {
-            uint256 buyBackAmt = _earnedAmt.mul(buyBackRate).div(feeMax);
-    
-            _safeSwap(
-                buyBackAmt,
-                earnedToFishPath,
-                buyBackAddress
-            );
-
-            _earnedAmt = _earnedAmt.sub(buyBackAmt);
-        }
-        
         return _earnedAmt;
     }
 
@@ -231,27 +225,27 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     
     function setSettings(
         uint256 _controllerFee,
+        uint256 _operatorFee,
         uint256 _rewardRate,
-        uint256 _buyBackRate,
         uint256 _withdrawFeeFactor,
         uint256 _slippageFactor,
         address _uniRouterAddress
     ) external onlyGov {
-        require(_controllerFee.add(_rewardRate).add(_buyBackRate) <= feeMaxTotal, "Max fee of 10%");
+        require(_controllerFee.add(_operatorFee).add(_rewardRate) <= feeMaxTotal, "Max fee of 10%");
         require(_withdrawFeeFactor >= withdrawFeeFactorLL, "_withdrawFeeFactor too low");
         require(_withdrawFeeFactor <= withdrawFeeFactorMax, "_withdrawFeeFactor too high");
         require(_slippageFactor <= slippageFactorUL, "_slippageFactor too high");
         controllerFee = _controllerFee;
+        operatorFee = _operatorFee;
         rewardRate = _rewardRate;
-        buyBackRate = _buyBackRate;
         withdrawFeeFactor = _withdrawFeeFactor;
         slippageFactor = _slippageFactor;
         uniRouterAddress = _uniRouterAddress;
 
         emit SetSettings(
             _controllerFee,
+            _operatorFee,
             _rewardRate,
-            _buyBackRate,
             _withdrawFeeFactor,
             _slippageFactor,
             _uniRouterAddress
@@ -275,7 +269,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         );
     }
     
-    function _safeSwapWmatic(
+    function _safeSwapWone(
         uint256 _amountIn,
         address[] memory _path,
         address _to
@@ -290,5 +284,10 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             _to,
             now.add(600)
         );
+    }
+
+    function safeTransferETH(address to, uint256 value) internal {
+        (bool success, ) = to.call{value: value}(new bytes(0));
+        require(success, 'TransferHelper::safeTransferETH: ETH transfer failed');
     }
 }

@@ -2,12 +2,12 @@
 
 pragma solidity 0.6.12;
 
-import "OpenZeppelin/openzeppelin-contracts@3.1.0/contracts/access/Ownable.sol";
-import "OpenZeppelin/openzeppelin-contracts@3.1.0/contracts/token/ERC20/SafeERC20.sol";
-import "OpenZeppelin/openzeppelin-contracts@3.1.0/contracts/utils/EnumerableSet.sol";
-import "OpenZeppelin/openzeppelin-contracts@3.1.0/contracts/utils/ReentrancyGuard.sol";
+import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/access/Ownable.sol";
+import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/math/SafeMath.sol";
+import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/utils/EnumerableSet.sol";
+import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/utils/ReentrancyGuard.sol";
 
-import "./Vault2/Operators.sol";
+import "./Farm/Operators.sol";
 
 contract MockSushiChef is Ownable, ReentrancyGuard, Operators {
     using SafeMath for uint256;

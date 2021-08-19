@@ -7,7 +7,7 @@ project_structure:
     tests: tests
 
 networks:
-    default: development
+    default: one-test
     development:
         gas_limit: max
         gas_buffer: 1
@@ -29,7 +29,8 @@ compiler:
         optimizer:
             enabled: true
             runs: 200
-        remappings: null
+        remappings:
+            - "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0=OpenZeppelin/openzeppelin-contracts@3.1.0"
     vyper:
         version: null
 

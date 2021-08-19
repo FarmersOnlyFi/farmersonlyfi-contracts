@@ -2,7 +2,7 @@
 
 pragma solidity 0.6.12;
 
-import "OpenZeppelin/openzeppelin-contracts@3.1.0/contracts/token/ERC20/SafeERC20.sol";
+import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/token/ERC20/SafeERC20.sol";
 
 contract MockUniRouter02 {
     using SafeMath for uint256;
@@ -92,7 +92,7 @@ contract MockUniRouter02 {
             amount0
         );
 
-        amounts = new uint[](path.length);
+        amounts = new uint[](2);
         amounts[0] = amount0;
         amounts[1] = amount1.mul(98).div(100);
         return amounts;

@@ -2,13 +2,13 @@
 
 pragma solidity 0.6.12;
 
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/access/Ownable.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/token/ERC20/SafeERC20.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/utils/EnumerableSet.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/utils/Pausable.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/utils/ReentrancyGuard.sol";
+import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/access/Ownable.sol";
+import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/token/ERC20/SafeERC20.sol";
+import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/utils/EnumerableSet.sol";
+import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/utils/Pausable.sol";
+import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/utils/ReentrancyGuard.sol";
 
-contract StrategyFish is Ownable, ReentrancyGuard, Pausable {
+contract StrategyFox is Ownable, ReentrancyGuard, Pausable {
 
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -32,8 +32,8 @@ contract StrategyFish is Ownable, ReentrancyGuard, Pausable {
          */
     }
 
-    address public constant usdcAddress = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
-    address public constant wantAddress = 0x3a3Df212b7AA91Aa0402B9035b098891d276572B;
+    address public usdcAddress;
+    address public wantAddress;
 
     address public vaultChefAddress;
     address public govAddress; // timelock contract
@@ -44,10 +44,14 @@ contract StrategyFish is Ownable, ReentrancyGuard, Pausable {
     uint256 public accUsdPerShare = 0;
 
     constructor(
-        address _vaultChefAddress
+        address _vaultChefAddress,
+        address _usdcAddress,
+        address _wantAddress
     ) public {
         govAddress = msg.sender;
         vaultChefAddress = _vaultChefAddress;
+        usdcAddress = _usdcAddress;
+        wantAddress = _wantAddress;
 
         transferOwnership(vaultChefAddress);
     }

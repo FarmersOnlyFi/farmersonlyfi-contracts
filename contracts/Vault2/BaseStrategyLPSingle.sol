@@ -19,8 +19,8 @@ abstract contract BaseStrategyLPSingle is BaseStrategyLP {
 
         if (earnedAmt > 0) {
             earnedAmt = distributeFees(earnedAmt);
+            earnedAmt = distributeOperatorFees(earnedAmt);
             earnedAmt = distributeRewards(earnedAmt);
-            earnedAmt = buyBack(earnedAmt);
     
             if (earnedAddress != token0Address) {
                 // Swap half earned to token0
