@@ -1,2 +1,7 @@
 /**/artifacts/*
 /**/.deps/*
+.idea/
+
+*.pyc
+
+venv/
