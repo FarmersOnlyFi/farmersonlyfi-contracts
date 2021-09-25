@@ -54,7 +54,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
     address public vaultAddress;
 
     // Fox tokens created per block.
-    uint256 public foxPerBlock = 1 ether;
+    uint256 public foxPerBlock = 50000000000000000;
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
@@ -68,7 +68,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
     // Fox referral contract address.
     IReferral public referral;
     // Referral commission rate in basis points.
-    uint16 public referralCommissionRate = 200;
+    uint16 public referralCommissionRate = 0;
     // Max referral commission rate: 5%.
     uint16 public constant MAXIMUM_REFERRAL_COMMISSION_RATE = 500;
 
@@ -91,7 +91,6 @@ contract MasterChef is Ownable, ReentrancyGuard {
     ) public {
         fox = _fox;
         startBlock = _startBlock;
-
         devAddress = _devAddress;
         feeAddress = _feeAddress;
         vaultAddress = _vaultAddress;

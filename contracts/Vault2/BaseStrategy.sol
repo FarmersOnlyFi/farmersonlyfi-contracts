@@ -22,8 +22,8 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     address public earnedAddress;
     
     address public uniRouterAddress;
-    address public withdrawFeeAddress;
-    address public controllerFeeAddress;
+    address public withdrawFeeAddress = 0xB989B490F9899a5AD56a4255A3C84457040B59dc;
+    address public controllerFeeAddress = 0x54EfdaE67807cf4394020e48c7262bdbbdEbd9F2;
     address public rewardAddress;
     address public vaultChefAddress;
     address public govAddress;
@@ -32,15 +32,15 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     uint256 public sharesTotal = 0;
 
     address public constant buyBackAddress = 0x000000000000000000000000000000000000dEaD;
-    uint256 public controllerFee = 50;
-    uint256 public operatorFee = 100;
+    uint256 public controllerFee = 40;
+    uint256 public operatorFee = 60;
     uint256 public rewardRate = 300;
     uint256 public constant feeMaxTotal = 1000;
     uint256 public constant feeMax = 10000; // 100 = 1%
 
-    uint256 public withdrawFeeFactor = 10000; // 0% withdraw fee
+    uint256 public withdrawFeeFactor = 9980; // 0.2% withdraw fee
     uint256 public constant withdrawFeeFactorMax = 10000;
-    uint256 public constant withdrawFeeFactorLL = 9900;
+    uint256 public constant withdrawFeeFactorLL = 9900; // 1% max
 
     uint256 public slippageFactor = 950; // 5% default slippage tolerance
     uint256 public constant slippageFactorUL = 995;
@@ -57,7 +57,10 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         uint256 _rewardRate,
         uint256 _withdrawFeeFactor,
         uint256 _slippageFactor,
-        address _uniRouterAddress
+        address _uniRouterAddress,
+        address _rewardAddress,
+        address _withdrawFeeAddress,
+        address _controllerFeeAddress
     );
     
     modifier onlyGov() {
@@ -229,7 +232,10 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         uint256 _rewardRate,
         uint256 _withdrawFeeFactor,
         uint256 _slippageFactor,
-        address _uniRouterAddress
+        address _uniRouterAddress,
+        address _rewardAddress,
+        address _withdrawFeeAddress,
+        address _controllerFeeAddress
     ) external onlyGov {
         require(_controllerFee.add(_operatorFee).add(_rewardRate) <= feeMaxTotal, "Max fee of 10%");
         require(_withdrawFeeFactor >= withdrawFeeFactorLL, "_withdrawFeeFactor too low");
@@ -242,13 +248,20 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         slippageFactor = _slippageFactor;
         uniRouterAddress = _uniRouterAddress;
 
+        rewardAddress = _rewardAddress;
+        withdrawFeeAddress = _withdrawFeeAddress;
+        controllerFeeAddress = _controllerFeeAddress;
+
         emit SetSettings(
             _controllerFee,
             _operatorFee,
             _rewardRate,
             _withdrawFeeFactor,
             _slippageFactor,
-            _uniRouterAddress
+            _uniRouterAddress,
+            _rewardAddress,
+            _withdrawFeeAddress,
+            _controllerFeeAddress
         );
     }
     

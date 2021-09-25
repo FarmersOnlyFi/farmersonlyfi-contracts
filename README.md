@@ -26,18 +26,5 @@ brownie networks add Harmony one-main host=https://api.harmony.one chainid=16666
 Run tests with `brownie test`
 
 
-## Deployed Contracts
-
-- VaultChef: 
-
-
-## Contracts
-
-### Testnet
-
-SushiswapRouter = 0x1b02da8cb0d097eb8d57a175b88c7d8b47997506
-WONEAddress = 0x7a2afac38517d512e55c0bce3b6805c10a04d60f
-
-## MainNet
 
 

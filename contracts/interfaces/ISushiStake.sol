@@ -10,6 +10,7 @@ interface ISushiStake {
     function emergencyWithdraw(uint256 pid, address to) external;
 
     function harvest(uint256 pid, address to) external;
+    function pendingSushi ( uint256 _pid, address _user ) external view returns ( uint256 );
     
     function userInfo(uint256 _pid, address _user) external view returns (uint256, uint256);
 }

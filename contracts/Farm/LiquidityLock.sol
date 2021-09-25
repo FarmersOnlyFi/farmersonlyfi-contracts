@@ -537,7 +537,7 @@ contract LiquidityLock is Ownable {
     }
 
     function withdrawToken(IERC20 _token, uint256 _amount, address _to) external onlyOwner {
-        require(lockTime > block.number, "You still need to wait!");
+        require(lockTime < block.number, "You still need to wait!");
         _token.safeTransfer(_to, _amount);
     }
 }

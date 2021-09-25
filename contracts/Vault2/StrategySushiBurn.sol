@@ -6,7 +6,6 @@ import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contr
 
 import "../interfaces/ISushiStake.sol";
 import "../interfaces/IWETH.sol";
-
 import "./BaseStrategyLP.sol";
 
 contract StrategySushiBurn is BaseStrategyLP {
@@ -67,8 +66,9 @@ contract StrategySushiBurn is BaseStrategyLP {
         
         _resetAllowances();
     }
+
     function depositReward(uint256 _depositAmt) external returns (bool) {
-        IERC20(woneAddress).safeTransferFrom(msg.sender, address(this), _depositAmt);
+        IWETH(woneAddress).transferFrom(msg.sender, address(this), _depositAmt);
         uint256 woneAmt = IERC20(woneAddress).balanceOf(address(this));
 
         if (woneAmt > 0) {
@@ -107,6 +107,7 @@ contract StrategySushiBurn is BaseStrategyLP {
                 );
             }
         }
+        _farm();
         return true;
     }
 
@@ -127,7 +128,7 @@ contract StrategySushiBurn is BaseStrategyLP {
         (uint256 balance,) = ISushiStake(masterchefAddress).userInfo(pid, address(this));
         return IERC20(wantAddress).balanceOf(address(this)).add(balance);
     }
-    
+
     function earn() external override nonReentrant whenNotPaused onlyGov {
         // Harvest farm tokens
         ISushiStake(masterchefAddress).harvest(pid, address(this));
@@ -156,42 +157,39 @@ contract StrategySushiBurn is BaseStrategyLP {
     function distributeFees(uint256 _earnedAmt, address _earnedAddress) internal returns (uint256) {
         if (controllerFee > 0) {
             uint256 fee = _earnedAmt.mul(controllerFee).div(feeMax);
-
-            if (_earnedAddress == woneAddress) {
-                IWETH(woneAddress).withdraw(fee);
-                safeTransferETH(controllerFeeAddress, fee);
-            } else {
-                _safeSwapWone(
-                    fee,
-                    earnedToWonePath,
-                    controllerFeeAddress
-                );
+            if (fee > 0) {
+                if (_earnedAddress == woneAddress) {
+                    IWETH(woneAddress).withdraw(fee);
+                    safeTransferETH(controllerFeeAddress, fee);
+                } else {
+                    _safeSwapWone(fee, earnedToWonePath, controllerFeeAddress);
+                }
+                _earnedAmt = _earnedAmt.sub(fee);
             }
-
-            _earnedAmt = _earnedAmt.sub(fee);
         }
-
         return _earnedAmt;
     }
 
     function distributeOperatorFees(uint256 _earnedAmt, address _earnedAddress) internal returns (uint256) {
         if (operatorFee > 0) {
             uint256 fee = _earnedAmt.mul(operatorFee).div(feeMax);
-
-            if (_earnedAddress == woneAddress) {
-                IWETH(woneAddress).withdraw(fee);
-                safeTransferETH(withdrawFeeAddress, fee);
-            } else {
-                _safeSwapWone(
-                    fee,
-                    earnedToWonePath,
-                    withdrawFeeAddress
-                );
+            if (fee > 0) {
+                if (_earnedAddress == woneAddress) {
+                    IWETH(woneAddress).withdraw(fee);
+                    safeTransferETH(withdrawFeeAddress, fee);
+                } else {
+                    _safeSwapWone(
+                        fee,
+                        earnedToWonePath,
+                        withdrawFeeAddress
+                    );
+                }
+                _earnedAmt = _earnedAmt.sub(fee);
             }
-            _earnedAmt = _earnedAmt.sub(fee);
         }
         return _earnedAmt;
     }
+
 
     function buyBack(uint256 buyBackAmt, address _earnedAddress) internal returns (uint256) {
         // Burn 100% of rewards!!!
@@ -245,6 +243,8 @@ contract StrategySushiBurn is BaseStrategyLP {
 
     function emergencyPanic() external onlyGov {
         _pause();
-        ISushiStake(masterchefAddress).emergencyWithdraw(pid, address(this));
+        ISushiStake(masterchefAddress).emergencyWithdraw(pid, msg.sender);
     }
+
+    receive() external payable {}
 }

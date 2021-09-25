@@ -36,7 +36,7 @@ contract StrategyFox is Ownable, ReentrancyGuard, Pausable {
     address public wantAddress;
 
     address public vaultChefAddress;
-    address public govAddress; // timelock contract
+    address public govAddress;
 
     mapping(address => UserInfo) public userInfo;
     uint256 public sharesTotal = 0;
