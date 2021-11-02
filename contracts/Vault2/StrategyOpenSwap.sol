@@ -4,24 +4,25 @@ pragma solidity 0.6.12;
 
 import "github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.1.0/contracts/token/ERC20/SafeERC20.sol";
 
-import "../interfaces/IViperBridgePool.sol";
+import "../interfaces/IOpenSwapChef.sol";
 import "../interfaces/IWETH.sol";
 
 import "./BaseStrategyLP.sol";
 
-contract StrategyViper is BaseStrategyLP {
+contract StrategyOpenSwap is BaseStrategyLP {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     uint256 public pid;
-    address public viperStakeAddress;
+    address public masterchefAddress;
 
     constructor(
         address _vaultChefAddress,
+        uint256 _pid,
         address _wantAddress,
         address _earnedAddress,
         address _woneAddress,
-        address _viperStakeAddress,
+        address _masterchefAddress,
         address _uniRouterAddress,
         address _rewardAddress,
         address[] memory _earnedToWonePath,
@@ -32,6 +33,7 @@ contract StrategyViper is BaseStrategyLP {
     ) public {
         govAddress = msg.sender;
         vaultChefAddress = _vaultChefAddress;
+        pid = _pid;
 
         wantAddress = _wantAddress;
         earnedAddress = _earnedAddress;
@@ -40,7 +42,7 @@ contract StrategyViper is BaseStrategyLP {
         token0Address = IUniPair(wantAddress).token0();
         token1Address = IUniPair(wantAddress).token1();
 
-        viperStakeAddress = _viperStakeAddress;
+        masterchefAddress = _masterchefAddress;
         uniRouterAddress = _uniRouterAddress;
         rewardAddress = _rewardAddress;
 
@@ -51,20 +53,21 @@ contract StrategyViper is BaseStrategyLP {
         token1ToEarnedPath = _token1ToEarnedPath;
 
         transferOwnership(vaultChefAddress);
+        
         _resetAllowances();
     }
 
     function _vaultDeposit(uint256 _amount) internal override {
-        IViperBridgePool(viperStakeAddress).deposit(_amount);
+        IOpenSwapChef(masterchefAddress).deposit(pid, _amount);
     }
     
     function _vaultWithdraw(uint256 _amount) internal override {
-        IViperBridgePool(viperStakeAddress).withdraw(_amount);
+        IOpenSwapChef(masterchefAddress).withdraw(pid, _amount);
     }
 
     function earn() external override nonReentrant whenNotPaused onlyGov {
         // Harvest farm tokens
-        IViperBridgePool(viperStakeAddress).deposit(0);
+        IOpenSwapChef(masterchefAddress).deposit(pid, 0);
 
         // Converts farm tokens into want tokens
         uint256 earnedAmt = IERC20(earnedAddress).balanceOf(address(this));
@@ -92,6 +95,7 @@ contract StrategyViper is BaseStrategyLP {
                 );
             }
         }
+
         
         if (earnedAmt > 0) {
             // Get want tokens, ie. add liquidity
@@ -171,12 +175,12 @@ contract StrategyViper is BaseStrategyLP {
     }
     
     function vaultSharesTotal() public override view returns (uint256) {
-        (uint256 balance,) = IViperBridgePool(viperStakeAddress).userInfo(address(this));
+        (uint256 balance,) = IOpenSwapChef(masterchefAddress).userInfo(pid, address(this));
         return balance;
     }
     
     function wantLockedTotal() public override view returns (uint256) {
-        (uint256 balance,) = IViperBridgePool(viperStakeAddress).userInfo(address(this));
+        (uint256 balance,) = IOpenSwapChef(masterchefAddress).userInfo(pid, address(this));
         return IERC20(wantAddress).balanceOf(address(this)).add(balance);
     }
 
@@ -188,9 +192,9 @@ contract StrategyViper is BaseStrategyLP {
             uint256(-1)
         );
 
-        IERC20(wantAddress).safeApprove(viperStakeAddress, uint256(0));
+        IERC20(wantAddress).safeApprove(masterchefAddress, uint256(0));
         IERC20(wantAddress).safeIncreaseAllowance(
-            viperStakeAddress,
+            masterchefAddress,
             uint256(-1)
         );
 
@@ -221,17 +225,12 @@ contract StrategyViper is BaseStrategyLP {
     }
 
     function _emergencyVaultWithdraw() internal override {
-        IViperBridgePool(viperStakeAddress).withdraw(vaultSharesTotal());
+        IOpenSwapChef(masterchefAddress).withdraw(pid, vaultSharesTotal());
     }
 
     function emergencyPanic() external onlyGov {
         _pause();
-        IViperBridgePool(viperStakeAddress).emergencyWithdraw();
-    }
-
-    function emergencyRewardWithdraw(uint amt) external onlyGov {
-        _pause();
-        IViperBridgePool(viperStakeAddress).emergencyRewardWithdraw(amt);
+        IOpenSwapChef(masterchefAddress).emergencyWithdraw(pid);
     }
 
     receive() external payable {}
