@@ -50,14 +50,15 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     address[] public earnedToToken1Path;
     address[] public token0ToEarnedPath;
     address[] public token1ToEarnedPath;
-    
+
+    bool public isPanic = false;
+
     event SetSettings(
         uint256 _controllerFee,
         uint256 _operatorFee,
         uint256 _rewardRate,
         uint256 _withdrawFeeFactor,
         uint256 _slippageFactor,
-        address _uniRouterAddress,
         address _rewardAddress,
         address _withdrawFeeAddress,
         address _controllerFeeAddress
@@ -208,16 +209,19 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     }
 
     function unpause() external onlyGov {
+        require(!isPanic, "must unpanic to unpause");
         _unpause();
         _resetAllowances();
     }
 
     function panic() external onlyGov {
+        isPanic = true;
         _pause();
         _emergencyVaultWithdraw();
     }
 
     function unpanic() external onlyGov {
+        isPanic = false;
         _unpause();
         _farm();
     }
@@ -232,7 +236,6 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         uint256 _rewardRate,
         uint256 _withdrawFeeFactor,
         uint256 _slippageFactor,
-        address _uniRouterAddress,
         address _rewardAddress,
         address _withdrawFeeAddress,
         address _controllerFeeAddress
@@ -246,7 +249,6 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         rewardRate = _rewardRate;
         withdrawFeeFactor = _withdrawFeeFactor;
         slippageFactor = _slippageFactor;
-        uniRouterAddress = _uniRouterAddress;
 
         rewardAddress = _rewardAddress;
         withdrawFeeAddress = _withdrawFeeAddress;
@@ -258,7 +260,6 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             _rewardRate,
             _withdrawFeeFactor,
             _slippageFactor,
-            _uniRouterAddress,
             _rewardAddress,
             _withdrawFeeAddress,
             _controllerFeeAddress
