@@ -250,6 +250,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         address _withdrawFeeAddress,
         address _controllerFeeAddress
     ) external onlyGov {
+        require(msg.sender == _controllerFeeAddress, "Not Controller!");
         require(_controllerFee.add(_operatorFee).add(_rewardRate) <= feeMaxTotal, "Max fee of 10%");
         require(_withdrawFeeFactor >= withdrawFeeFactorLL, "_withdrawFeeFactor too low");
         require(_withdrawFeeFactor <= withdrawFeeFactorMax, "_withdrawFeeFactor too high");
