@@ -229,9 +229,5 @@ contract StrategyElk is BaseStrategyLP {
         IElkStake(stakingPoolAddress).getReward();
     }
 
-    function updateStakingPoolAddress(address _stakingPoolAddress) external onlyGov {
-        stakingPoolAddress = _stakingPoolAddress;
-    }
-
     receive() external payable {}
 }
