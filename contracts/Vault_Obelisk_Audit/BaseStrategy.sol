@@ -112,6 +112,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
 
     function withdraw(address _userAddress, uint256 _wantAmt) external onlyOwner nonReentrant returns (uint256) {
         require(_wantAmt > 0, "_wantAmt is 0");
+        require(wantLockedTotal() > 0, "wantLockedTotal() is 0");
         
         uint256 wantAmt = IERC20(wantAddress).balanceOf(address(this));
         
