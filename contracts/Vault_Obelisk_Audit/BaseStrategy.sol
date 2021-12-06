@@ -44,6 +44,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
 
     uint256 public slippageFactor = 950; // 5% default slippage tolerance
     uint256 public constant slippageFactorUL = 995;
+    uint256 public constant slippageFactorLL = 700;
 
     address[] public earnedToWonePath;
     address[] public earnedToToken0Path;
@@ -252,6 +253,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         require(_withdrawFeeFactor >= withdrawFeeFactorLL, "_withdrawFeeFactor too low");
         require(_withdrawFeeFactor <= withdrawFeeFactorMax, "_withdrawFeeFactor too high");
         require(_slippageFactor <= slippageFactorUL, "_slippageFactor too high");
+        require(_slippageFactor >= slippageFactorLL, "_slippageFactor too low");
         controllerFee = _controllerFee;
         operatorFee = _operatorFee;
         rewardRate = _rewardRate;
