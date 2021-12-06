@@ -228,8 +228,7 @@ contract StrategyFuzz is BaseStrategyLP {
         IFuzzChef(masterchefAddress).withdraw(pid, vaultSharesTotal());
     }
 
-    function emergencyPanic() external onlyGov {
-        _pause();
+    function _emergencyPanic() internal override {
         IFuzzChef(masterchefAddress).emergencyWithdraw(pid);
     }
 

@@ -76,6 +76,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     function wantLockedTotal() public virtual view returns (uint256);
     function _resetAllowances() internal virtual;
     function _emergencyVaultWithdraw() internal virtual;
+    function _emergencyPanic() internal virtual;
     
     function deposit(address _userAddress, uint256 _wantAmt) external onlyOwner nonReentrant whenNotPaused returns (uint256) {
         // Call must happen before transfer
@@ -218,6 +219,12 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         isPanic = true;
         _pause();
         _emergencyVaultWithdraw();
+    }
+
+    function emergencyPanic() external onlyGov {
+        isPanic = true;
+        _pause();
+        _emergencyPanic();
     }
 
     function unpanic() external onlyGov {

@@ -241,8 +241,7 @@ contract StrategySushiBurn is BaseStrategyLP {
         ISushiStake(masterchefAddress).withdraw(pid, vaultSharesTotal(), address(this));
     }
 
-    function emergencyPanic() external onlyGov {
-        _pause();
+    function _emergencyPanic() internal override {
         ISushiStake(masterchefAddress).emergencyWithdraw(pid, msg.sender);
     }
 

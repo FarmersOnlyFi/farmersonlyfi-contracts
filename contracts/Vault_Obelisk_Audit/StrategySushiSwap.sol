@@ -261,8 +261,7 @@ contract StrategySushiSwap is BaseStrategyLP {
         ISushiStake(sushiYieldAddress).withdraw(pid, vaultSharesTotal(), address(this));
     }
 
-    function emergencyPanic() external onlyGov {
-        _pause();
+    function _emergencyPanic() external onlyGov {
         ISushiStake(sushiYieldAddress).emergencyWithdraw(pid, address(this));
     }
 

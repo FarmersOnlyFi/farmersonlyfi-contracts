@@ -228,8 +228,7 @@ contract StrategyArtemis is BaseStrategyLP {
         IArtemisChef(masterchefAddress).withdraw(pid, vaultSharesTotal());
     }
 
-    function emergencyPanic() external onlyGov {
-        _pause();
+    function _emergencyPanic() internal override {
         IArtemisChef(masterchefAddress).emergencyWithdraw(pid);
     }
 

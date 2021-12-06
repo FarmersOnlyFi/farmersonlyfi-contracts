@@ -228,8 +228,7 @@ contract StrategyFarmersOnly is BaseStrategyLP {
         IFarmersOnlyChef(masterchefAddress).withdraw(pid, vaultSharesTotal());
     }
 
-    function emergencyPanic() external onlyGov {
-        _pause();
+    function _emergencyPanic() internal override {
         IFarmersOnlyChef(masterchefAddress).emergencyWithdraw(pid);
     }
 

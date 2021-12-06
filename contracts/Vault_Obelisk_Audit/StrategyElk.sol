@@ -224,12 +224,12 @@ contract StrategyElk is BaseStrategyLP {
         IElkStake(stakingPoolAddress).withdraw(vaultSharesTotal());
     }
 
-    function emergencyPanic() external onlyGov {
-        _pause();
+    function _emergencyPanic() internal override {
         IElkStake(stakingPoolAddress).exit();
     }
 
     function emergencyRewardWithdraw(uint amt) external onlyGov {
+        isPanic = true;
         _pause();
         IElkStake(stakingPoolAddress).getReward();
     }
