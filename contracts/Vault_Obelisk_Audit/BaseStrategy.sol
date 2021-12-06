@@ -194,7 +194,8 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             );
 
             uint256 woneAfter = IERC20(woneAddress).balanceOf(address(this)).sub(woneBefore);
-            IStrategyBurnVault(rewardAddress).depositReward(woneAfter);
+            IERC20(woneAddress).safeTransfer(rewardAddress, woneAfter);
+            IStrategyBurnVault(rewardAddress).depositReward();
             _earnedAmt = _earnedAmt.sub(fee);
         }
 

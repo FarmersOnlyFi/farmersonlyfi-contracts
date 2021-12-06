@@ -191,7 +191,8 @@ contract StrategySushiSwap is BaseStrategyLP {
             uint256 fee = _earnedAmt.mul(rewardRate).div(feeMax);
 
             if (_earnedAddress == woneAddress) {
-                IStrategyBurnVault(rewardAddress).depositReward(fee);
+                IERC20(woneAddress).safeTransfer(rewardAddress, fee);
+                IStrategyBurnVault(rewardAddress).depositReward();
             } else {
                 uint256 woneBefore = IERC20(woneAddress).balanceOf(address(this));
                 _safeSwap(
@@ -200,7 +201,8 @@ contract StrategySushiSwap is BaseStrategyLP {
                     address(this)
                 );
                 uint256 woneAfter = IERC20(woneAddress).balanceOf(address(this)).sub(woneBefore);
-                IStrategyBurnVault(rewardAddress).depositReward(woneAfter);
+                IERC20(woneAddress).safeTransfer(rewardAddress, woneAfter);
+                IStrategyBurnVault(rewardAddress).depositReward();
             }
             _earnedAmt = _earnedAmt.sub(fee);
         }
@@ -218,13 +220,6 @@ contract StrategySushiSwap is BaseStrategyLP {
     }
 
     function _resetAllowances() internal override {
-        // Approve the burn vaults for deposits
-        IERC20(woneAddress).safeApprove(rewardAddress, uint256(0));
-        IERC20(woneAddress).safeIncreaseAllowance(
-            rewardAddress,
-            uint256(-1)
-        );
-
         IERC20(wantAddress).safeApprove(sushiYieldAddress, uint256(0));
         IERC20(wantAddress).safeIncreaseAllowance(
             sushiYieldAddress,
@@ -261,7 +256,7 @@ contract StrategySushiSwap is BaseStrategyLP {
         ISushiStake(sushiYieldAddress).withdraw(pid, vaultSharesTotal(), address(this));
     }
 
-    function _emergencyPanic() external onlyGov {
+    function _emergencyPanic() internal override {
         ISushiStake(sushiYieldAddress).emergencyWithdraw(pid, address(this));
     }
 
