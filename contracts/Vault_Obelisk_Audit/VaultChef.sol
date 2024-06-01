@@ -133,7 +133,7 @@ contract VaultChef is Ownable, ReentrancyGuard, Operators {
     }
 
     // Withdraw everything from pool for yourself
-    function withdrawAll(uint256 _pid) external {
+    function withdrawAll(uint256 _pid) external nonReentrant {
         _withdraw(_pid, uint256(-1), msg.sender);
     }
 

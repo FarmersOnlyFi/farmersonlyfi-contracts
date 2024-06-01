@@ -9,6 +9,8 @@ import "../interfaces/IReferral.sol";
 
 contract Operators is Ownable {
     mapping(address => bool) public operators;
+    // Will have de-listed operators and can have dups
+    address[] public operatorList;
 
     event OperatorUpdated(address indexed operator, bool indexed status);
 
@@ -20,6 +22,7 @@ contract Operators is Ownable {
     // Update the status of the operator
     function updateOperator(address _operator, bool _status) external onlyOwner {
         operators[_operator] = _status;
+        operatorList.push(_operator);
         emit OperatorUpdated(_operator, _status);
     }
 }

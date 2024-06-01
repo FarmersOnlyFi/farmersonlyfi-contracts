@@ -67,8 +67,8 @@ contract StrategySushiBurn is BaseStrategyLP {
         _resetAllowances();
     }
 
-    function depositReward(uint256 _depositAmt) external returns (bool) {
-        IWETH(woneAddress).transferFrom(msg.sender, address(this), _depositAmt);
+    function depositReward() external returns (bool) {
+        // Assume WONE was already transferred here
         uint256 woneAmt = IERC20(woneAddress).balanceOf(address(this));
 
         if (woneAmt > 0) {
@@ -241,8 +241,7 @@ contract StrategySushiBurn is BaseStrategyLP {
         ISushiStake(masterchefAddress).withdraw(pid, vaultSharesTotal(), address(this));
     }
 
-    function emergencyPanic() external onlyGov {
-        _pause();
+    function _emergencyPanic() internal override {
         ISushiStake(masterchefAddress).emergencyWithdraw(pid, msg.sender);
     }
 

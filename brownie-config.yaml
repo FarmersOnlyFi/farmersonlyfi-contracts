@@ -1,7 +1,7 @@
 project_structure:
     build: build
     contracts: contracts
-    interfaces: interfaces
+    interfaces: contracts/interfaces
     reports: reports
     scripts: scripts
     tests: tests

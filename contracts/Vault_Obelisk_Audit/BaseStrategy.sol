@@ -44,20 +44,22 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
 
     uint256 public slippageFactor = 950; // 5% default slippage tolerance
     uint256 public constant slippageFactorUL = 995;
+    uint256 public constant slippageFactorLL = 700;
 
     address[] public earnedToWonePath;
     address[] public earnedToToken0Path;
     address[] public earnedToToken1Path;
     address[] public token0ToEarnedPath;
     address[] public token1ToEarnedPath;
-    
+
+    bool public isPanic = false;
+
     event SetSettings(
         uint256 _controllerFee,
         uint256 _operatorFee,
         uint256 _rewardRate,
         uint256 _withdrawFeeFactor,
         uint256 _slippageFactor,
-        address _uniRouterAddress,
         address _rewardAddress,
         address _withdrawFeeAddress,
         address _controllerFeeAddress
@@ -75,6 +77,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     function wantLockedTotal() public virtual view returns (uint256);
     function _resetAllowances() internal virtual;
     function _emergencyVaultWithdraw() internal virtual;
+    function _emergencyPanic() internal virtual;
     
     function deposit(address _userAddress, uint256 _wantAmt) external onlyOwner nonReentrant whenNotPaused returns (uint256) {
         // Call must happen before transfer
@@ -109,6 +112,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
 
     function withdraw(address _userAddress, uint256 _wantAmt) external onlyOwner nonReentrant returns (uint256) {
         require(_wantAmt > 0, "_wantAmt is 0");
+        require(wantLockedTotal() > 0, "wantLockedTotal() is 0");
         
         uint256 wantAmt = IERC20(wantAddress).balanceOf(address(this));
         
@@ -192,7 +196,8 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             );
 
             uint256 woneAfter = IERC20(woneAddress).balanceOf(address(this)).sub(woneBefore);
-            IStrategyBurnVault(rewardAddress).depositReward(woneAfter);
+            IERC20(woneAddress).safeTransfer(rewardAddress, woneAfter);
+            IStrategyBurnVault(rewardAddress).depositReward();
             _earnedAmt = _earnedAmt.sub(fee);
         }
 
@@ -208,16 +213,25 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     }
 
     function unpause() external onlyGov {
+        require(!isPanic, "must unpanic to unpause");
         _unpause();
         _resetAllowances();
     }
 
     function panic() external onlyGov {
+        isPanic = true;
         _pause();
         _emergencyVaultWithdraw();
     }
 
+    function emergencyPanic() external onlyGov {
+        isPanic = true;
+        _pause();
+        _emergencyPanic();
+    }
+
     function unpanic() external onlyGov {
+        isPanic = false;
         _unpause();
         _farm();
     }
@@ -232,21 +246,21 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         uint256 _rewardRate,
         uint256 _withdrawFeeFactor,
         uint256 _slippageFactor,
-        address _uniRouterAddress,
         address _rewardAddress,
         address _withdrawFeeAddress,
         address _controllerFeeAddress
     ) external onlyGov {
+        require(msg.sender == _controllerFeeAddress, "Not Controller!");
         require(_controllerFee.add(_operatorFee).add(_rewardRate) <= feeMaxTotal, "Max fee of 10%");
         require(_withdrawFeeFactor >= withdrawFeeFactorLL, "_withdrawFeeFactor too low");
         require(_withdrawFeeFactor <= withdrawFeeFactorMax, "_withdrawFeeFactor too high");
         require(_slippageFactor <= slippageFactorUL, "_slippageFactor too high");
+        require(_slippageFactor >= slippageFactorLL, "_slippageFactor too low");
         controllerFee = _controllerFee;
         operatorFee = _operatorFee;
         rewardRate = _rewardRate;
         withdrawFeeFactor = _withdrawFeeFactor;
         slippageFactor = _slippageFactor;
-        uniRouterAddress = _uniRouterAddress;
 
         rewardAddress = _rewardAddress;
         withdrawFeeAddress = _withdrawFeeAddress;
@@ -258,7 +272,6 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             _rewardRate,
             _withdrawFeeFactor,
             _slippageFactor,
-            _uniRouterAddress,
             _rewardAddress,
             _withdrawFeeAddress,
             _controllerFeeAddress
